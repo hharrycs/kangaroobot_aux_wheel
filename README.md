@@ -1,4 +1,4 @@
-# Kangaroobot
+# KangarooBot auxiliary wheel-leg function
 
 This repo is to model, construct and control the mechanical arm that serves as the auxiliary wheel-leg function of KangarooBot:
 
