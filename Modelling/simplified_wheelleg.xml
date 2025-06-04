@@ -19,8 +19,8 @@
             <!-- <joint type="hinge"/> -->
             <geom type="box" size="0.01 0.01 0.245" rgba="1 0 0 1" mass="3" />
         </body>
-        <body pos="0 -0.33 -0.05">
-            <geom type="box" size="0.1 0.05 0.03" rgba="0.5 1 1 1" />
+        <body pos="0 -0.42 0.04">
+            <geom type="box" size="0.1 0.125 0.04" pos="0 0.125 0" rgba="0.5 1 1 1" />
             <inertial pos="-0.19607e-3 46.342e-3 -0.194e-3" mass="3.223" fullinertia="15831.27513e-6 19077.27233e-6 29841.67249e-6 -55.28381e-6 1.12985e-6 64.85291e-6"/>
 
             <body name="tail" pos="0 0 0" euler="0 0 0">
@@ -29,7 +29,7 @@
                 <geom type="box" size="0.05 0.2747 0.03" pos="0 -0.2747 0" rgba="0 0.5 1 1" />
                 <body pos="0 -0.5494 0" euler="0 90 0" >
                     <joint type="hinge" />
-                    <geom type="cylinder" size="0.0375 0.035" rgba="0 0 1 1" mass="0.254" />
+                    <geom type="cylinder" size="0.0375 0.035" rgba="0.8 0.8 0.8 1" mass="0.254" />
                 </body>
             </body>
 
@@ -39,7 +39,7 @@
   </worldbody>
 
     <actuator>
-        <motor joint="tail_motor" name="torque" gear="1" ctrllimited="true" ctrlrange="-50 50" />
+        <motor joint="tail_motor" name="torque" ctrlrange="-60 60" forcerange="-60 60" gear="1"/>
     </actuator>
 
 </mujoco>
