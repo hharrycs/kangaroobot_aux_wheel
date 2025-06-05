@@ -1,0 +1,45 @@
+<!-- corrected dimensions of TITA and aux wheel -->
+
+<mujoco>
+  <option timestep="0.001" />
+  <option integrator="RK4" />
+  <option gravity="0 0 -9.81" />
+  <worldbody>
+    <light diffuse=".5 .5 .5" pos="0 0 10" dir="0 0 -1"/>
+    <geom type="plane" size="2 2 0.1" rgba="1 1 1 1"/>
+    
+    <body pos="0 0 0.49" euler="0 0 180">
+        <joint type="free"/>
+        <geom type="box" size="0.255 0.295 0.05" pos="0 0 -0.05" rgba="0.5 1 1 1" mass="20" />
+        <body pos="0.265 0 -0.24499999">
+            <!-- <joint type="hinge"/> -->
+            <geom type="box" size="0.01 0.01 0.245" rgba="1 0 0 1" mass="3" />
+        </body>
+        <body pos="-0.265 0 -0.2449999">
+            <!-- <joint type="hinge"/> -->
+            <geom type="box" size="0.01 0.01 0.245" rgba="1 0 0 1" mass="3" />
+        </body>
+        <body pos="0 -0.42 0.04">
+            <geom type="box" size="0.1 0.125 0.04" pos="0 0.125 0" rgba="0.5 1 1 1" />
+            <inertial pos="-0.19607e-3 46.342e-3 -0.194e-3" mass="3.223" fullinertia="15831.27513e-6 19077.27233e-6 29841.67249e-6 -55.28381e-6 1.12985e-6 64.85291e-6"/>
+
+            <body name="tail" pos="0 0 0" euler="0 0 0">
+                <joint name="tail_motor" type="hinge" axis="-1 0 0" pos="0 0 0" range="-90 90" damping="5.0"/>
+                <inertial pos="-0.034e-3 -181.115e-3 50.557e-3" mass="8.119" fullinertia="307756.70501e-6 54232.56425e-6 277092.6789e-6 63.41861e-6 0.90748e-6 -44809.88172e-6"/>
+                <geom type="box" size="0.05 0.2747 0.03" pos="0 -0.2747 0" rgba="0 0.5 1 1" />
+                <body pos="0 -0.5494 0" euler="0 90 0" >
+                    <joint type="hinge" />
+                    <geom type="cylinder" size="0.0375 0.035" rgba="0.8 0.8 0.8 1" mass="0.254" />
+                </body>
+            </body>
+
+        </body>
+
+    </body>
+  </worldbody>
+
+    <actuator>
+        <motor joint="tail_motor" name="torque" ctrlrange="-60 60" forcerange="-60 60" gear="1"/>
+    </actuator>
+
+</mujoco>
