@@ -1,0 +1,35 @@
+<mujoco>
+  <option timestep="0.001" />
+  <option integrator="RK4" />
+  <option gravity="0 0 -9.81" />
+  <worldbody>
+    <light diffuse=".5 .5 .5" pos="0 0 10" dir="0 0 -1"/>
+    <geom type="plane" size="5 5 0.1" rgba="1 1 1 1"/>
+    
+    <body pos="0 0 1.6">
+        <joint type="free"/>
+        <geom type="box" size="1.125 2 0.1" rgba="0 1 0 1" mass="10" />
+        <body pos="1.05 0 -0.85">
+            <joint type="hinge"/>
+            <geom type="box" size="0.05 0.05 0.75" rgba="1 0 0 1" mass="1" />
+        </body>
+        <body pos="-1.05 0 -0.85">
+            <joint type="hinge"/>
+            <geom type="box" size="0.05 0.05 0.75" rgba="1 0 0 1" mass="1" />
+        </body>
+        <body name="tail" pos="0 -2.55 -0.75" euler="-40 0 0">
+            <joint name="tail_motor" type="hinge" axis="1 0 0" pos="0 0 1" damping="5.0" armature="0.1" range="-150 0" />
+            <geom type="box" size="0.1 0.1 1" rgba="0 1 0 1" mass="13" />
+            <body name="wheel" pos="0 0 -1" euler="0 90 0" >
+                <joint type="hinge" />
+                <geom type="cylinder" size="0.1 0.1" rgba="0 0 1 1" mass="1" />
+            </body>
+        </body>
+    </body>
+  </worldbody>
+
+    <actuator>
+        <motor joint="tail_motor" name="torque" gear="1" ctrllimited="true" ctrlrange="-50 50" />
+    </actuator>
+
+</mujoco>
