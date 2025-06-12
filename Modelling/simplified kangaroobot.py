@@ -4,7 +4,7 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 
-xml_path = 'simplified kangaroobot.xml'
+xml_path = 'Modelling/simplified kangaroobot.xml'
 simend = 15
 
 # For callback functions
@@ -14,7 +14,7 @@ button_right = False
 lastx = 0
 lasty = 0
 
-model = mj.MjModel.from_xml_path('simplified kangaroobot.xml')
+model = mj.MjModel.from_xml_path(xml_path)
 data = mj.MjData(model)
 
 # find out the angle between ground and tail
