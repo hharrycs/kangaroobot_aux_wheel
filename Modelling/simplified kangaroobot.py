@@ -2,9 +2,10 @@ import mujoco as mj
 from mujoco.glfw import glfw
 import numpy as np
 import os
+import matplotlib.pyplot as plt
 
 xml_path = 'simplified kangaroobot.xml'
-simend = 30
+simend = 15
 
 # For callback functions
 button_left = False
@@ -13,20 +14,53 @@ button_right = False
 lastx = 0
 lasty = 0
 
-initial_tail_angle = None
+model = mj.MjModel.from_xml_path('simplified kangaroobot.xml')
+data = mj.MjData(model)
+
+# find out the angle between ground and tail
+mj.mj_step(model, data)
+tail_body_id = model.body('tail').id
+tail_rotmat = data.xmat[tail_body_id].reshape(3, 3)
+tail_direction = tail_rotmat[:, 1]
+
+ground_normal = np.array([0, 0, 1])
+cos_theta = np.abs(np.dot(tail_direction, ground_normal)) / np.linalg.norm(tail_direction)
+angle_rad = np.arccos(cos_theta)
+angle_deg = np.degrees(angle_rad)
+
+# to pull out the mass from the xml file
+wheel_body_id = model.body("wheel").id
+
+tail_geom_id = np.where(model.geom_bodyid == tail_body_id)[0][0]
+wheel_geom_id = np.where(model.geom_bodyid == wheel_body_id)[0][0]
+tail_mass = model.body_mass[tail_geom_id]
+wheel_mass = model.body_mass[wheel_geom_id]
+print(tail_mass, wheel_mass)
+
+torque = None
+
+# for ploting torque after the simulation
+time_values = []
+torque_values = []
 
 def controller(model, data):
-     global initial_tail_angle
-
+     global torque
+     
      # Get actuator ID once
-     if initial_tail_angle is None:
-        actuator_id = mj.mj_name2id(model, mj.mjtObj.mjOBJ_ACTUATOR, "torque")
-        initial_tail_angle = actuator_id
-
-     # Apply constant torque  
-     data.ctrl[initial_tail_angle] = 44.14
+     if torque is None:
+        torque = mj.mj_name2id(model, mj.mjtObj.mjOBJ_ACTUATOR, "torque")
     
+     tail_rotmat = data.xmat[tail_body_id].reshape(3, 3)
+     tail_direction = tail_rotmat[:, 1]  # Using y-axis (adjust if needed)
+    
+     ground_normal = np.array([0, 0, 1])
+     cos_theta = np.abs(np.dot(tail_direction, ground_normal)) / np.linalg.norm(tail_direction)
+     angle_rad = np.arccos(cos_theta)
+     angle_deg = np.degrees(angle_rad)
 
+     data.ctrl[torque] = tail_mass * 9.81 * 0.5 * np.cos(np.radians(angle_deg)) + wheel_mass * 9.81 * np.cos(np.radians(angle_deg))
+     
+     
 def keyboard(window, key, scancode, act, mods):
     if act == glfw.PRESS and key == glfw.KEY_BACKSPACE:
         mj.mj_resetData(model, data)
@@ -103,8 +137,8 @@ abspath = os.path.join(dirname + "/" + xml_path)
 xml_path = abspath
 
 # MuJoCo data structures
-model = mj.MjModel.from_xml_path(xml_path)  # MuJoCo model
-data = mj.MjData(model)                # MuJoCo data
+#model = mj.MjModel.from_xml_path(xml_path)  # MuJoCo model
+#data = mj.MjData(model)                # MuJoCo data
 cam = mj.MjvCamera()                        # Abstract camera
 opt = mj.MjvOption()                        # visualization options
 
@@ -141,6 +175,10 @@ while not glfw.window_should_close(window):
     while (data.time - simstart < 1.0/60.0):
         mj.mj_step(model, data)
 
+        # record torque and time at each step
+        time_values.append(data.time)
+        torque_values.append(data.ctrl[torque])
+
     if (data.time>=simend):
         break;
 
@@ -159,5 +197,17 @@ while not glfw.window_should_close(window):
 
     # process pending GUI events, call GLFW callbacks
     glfw.poll_events()
+
+glfw.destroy_window(window)
+
+
+plt.figure(figsize=(10, 6))
+plt.plot(time_values, torque_values, label='Actuator Torque')
+plt.xlabel('Time (s)')
+plt.ylabel('Torque (Nm)')
+plt.title('Torque Application Over Time')
+plt.legend()
+plt.grid(True)
+plt.show()
 
 glfw.terminate()
