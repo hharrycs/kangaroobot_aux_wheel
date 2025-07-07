@@ -2,11 +2,15 @@ import serial
 import struct
 import csv
 import time
+import numpy as np
 
 import os
 
+t_run = 60
+filename="TITA_standing single_gyro_angles.csv"
+
 ser = serial.Serial(
-    port='COM6', 
+    port='COM12', 
     baudrate=9600,  
     timeout=1
 )
@@ -36,7 +40,7 @@ def read_gyroscope():
         
         # response = ser.read(22) # Read response (expecting 3 + 6 + 2 = 11 bytes: ID, func, count, 6 data bytes, 2 CRC)
         t2 = time.perf_counter() - t1
-        print("read time:", t2)
+        # print("read time:", t2)                           
         if len(response) != 11:
             print("Error in Gyro1: Incomplete response")
             return None
@@ -71,6 +75,17 @@ def read_gyroscope():
         print(f"Error: {e}")
         return None
 
+def set_gyro_xy_zero():
+    ser.write(bytes([0x50, 0x06, 0x00, 0x69, 0xB5, 0x88, 0x22, 0xA1]))
+    time.sleep(100e-3)
+    ser.write(bytes([0x50, 0x06, 0x00, 0x01, 0x00, 0x08, 0xD4, 0x4D]))
+    time.sleep(100e-3)
+    ser.write(bytes([0x50, 0x06, 0x00, 0x00, 0x00, 0x00, 0x84, 0x4B]))
+    time.sleep(100e-3)
+
+    print("Set gyroscope x-y reference angles succeeded!\n")
+    return
+
 def log_to_csv(t_run, t_buffer):
     t_count = 0
     t_start = time.perf_counter()
@@ -80,27 +95,32 @@ def log_to_csv(t_run, t_buffer):
         t_count = t_current - t_start
         if angles:
             roll, pitch, yaw = angles
+            if roll >= 0:
+                sign = +1
+            else: 
+                sign = -1
+            tilting_angle = np.degrees(np.arccos( np.cos(roll/180*np.pi) * np.cos(pitch/180*np.pi))) *sign 
             timestamp = time.strftime("%m%d_%H%M%S")
-            filename="CHANGE_NAME single_gyro_angles.csv"
             outputfile = "{}_{}".format(timestamp, filename)
 
-            folder_path = os.path.join('..', 'gyro_records')
+            folder_path = os.path.join('gyro_records')
             os.makedirs(folder_path, exist_ok=True)
             output_file = os.path.join(folder_path, outputfile)
-            # print(f"Writing to: {os.path.abspath(output_file)}")
 
             with open(filename, mode='a', newline='') as file:
                 writer = csv.writer(file)
                 # Write header if file is empty
                 if file.tell() == 0:
-                    writer.writerow(["Timestamp", "Roll (°)", "Pitch (°)", "Yaw (°)"])
-                writer.writerow([t_count, f"{roll:.6f}", f"{pitch:.6f}", f"{yaw:.6f}"])
-            print(f"Logged {t_count:.2f}s\t Roll: {roll:.2f}°, Pitch: {pitch:.2f}°, Yaw: {yaw:.2f}°")
+                    writer.writerow(["Timestamp", "Roll (°)", "Pitch (°)", "Yaw (°)", "Resultant tilting (°)"])
+                writer.writerow([t_count, f"{roll:.6f}", f"{pitch:.6f}", f"{yaw:.6f}", f"{tilting_angle:.6f}"])
+            print(f"Logged {t_count:.2f}s\tRoll: {roll:.2f}°, Pitch: {pitch:.2f}°, Yaw: {yaw:.2f}°\t Resultant tilting {tilting_angle:.2f}")
             time.sleep(0)
 
 try:
-    t_run = 5
     t_buffer = 1/100
+    set_gyro_xy_zero()
+    ser.reset_input_buffer()
+    time.sleep(3)
     log_to_csv(t_run, t_buffer)
 finally:
     ser.close()

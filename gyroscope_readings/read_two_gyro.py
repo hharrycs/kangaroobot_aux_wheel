@@ -185,16 +185,6 @@ def plot_graphs(results, header):
             ax.set_xlabel("Time")
         ax.legend(fontsize="small")
 
-    # right = outer[1].subgridspec(2, 1, hspace=0.45)          # 2 rows × 1 col
-    # right_pairs = [(7, 8), (9, 10)]       # columns 8&9, 10&11 in 0-based form
-    # for row, (c1, c2) in enumerate(right_pairs):
-    #     ax = fig.add_subplot(right[row, 0])
-    #     ax.plot(timestamp, results[:, c1], label=header[c1])
-    #     ax.plot(timestamp, results[:, c2], label=header[c2])
-    #     ax.set_ylabel("Value")
-    #     if row == 1:                       # bottom right plot gets the time label
-    #         ax.set_xlabel("Time")
-    #     ax.legend(fontsize="small")
     right        = outer[1].subgridspec(3, 1, hspace=0.45)
     right_groups = [(7, 8), (9, 10), (11, 12, 13)]   # 0-based indices
 
