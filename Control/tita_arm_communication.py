@@ -7,31 +7,33 @@ import numpy as np
 import struct
 import csv
 import os
+import msvcrt
 
 from motor_control_def import Controller
 from motor_process_responses import Responses
 
-filename="gyro_on_TITA control from_ground.csv"
+filename="gyro_on_TITA with_load_standing from_ground.csv"
 
 main_CAN = 253
 motor_CAN = [11, 41, 51, 31, 21] 
 angle_command1 = bytes([0x50, 0x03, 0x00, 0x3D, 0x00, 0x03, 0x99, 0x86]) # gyro angle reading command
 
-ser1 = serial.Serial('COM11', baudrate=921600, timeout=1)
-ser2 = serial.Serial('COM8', baudrate=921600, timeout=1)
-ser3 = serial.Serial(port='COM6', baudrate=9600, timeout=1)
+ser1 = serial.Serial('COM15', baudrate=921600, timeout=1)
+ser2 = serial.Serial('COM16', baudrate=921600, timeout=1)
+ser3 = serial.Serial(port='COM17', baudrate=9600, timeout=1)
 controller = Controller(ser1, ser2, None)
 processor = Responses(motor_CAN)
 
-t_MAX = 60
+t_MAX = 500
 t_delay = 1/1000 # between sending commands
 t_response = 1/200 # before reading responses
 record = []
 
 # Joint 2 tilting
 # tilting_limit = np.array([-10*np.pi/180, -(np.pi/2 - np.arccos(0.4925/0.5494))]) 
-tilting_limit = np.array([-10, -70]) # in degree
+tilting_limit = np.array([-9, -80]) # in degree
 lowest_limit, highest_limit = np.sort(tilting_limit)
+prev_tilting_angle = 0
 
 def calculate_crc(data):
     crc = 0xFFFF
@@ -63,7 +65,7 @@ def read_gyroscope(t_count):
         tilting_angle = np.degrees(np.arccos( np.cos(roll1/180*np.pi) * np.cos(pitch1/180*np.pi))) *sign # in deg
 
         # print(f'{t_count:.2f}s:\t{roll1:.2f}, {pitch1:.2f}, {yaw1:.2f} (deg)')
-        return roll1, pitch1, yaw1, tilting_angle
+        return tilting_angle
 
     except Exception as e:
         # any problem (timeout, CRC, struct error, etc.) ends up here
@@ -237,17 +239,18 @@ zero_pos_motor_offset = np.hstack((zero_pos_joint_offset[0], zero_pos_joint_offs
 
 
 prev_joint2_angle = initialise_RSmotors(zero_pos_motor_offset) # in deg
-prev_desired_joint2_angle = -65
+prev_desired_joint2_angle = -10.5
 set_gyro_xy_zero()
 time.sleep(5)
 
 t_start = time.perf_counter(); t_count = 0
 while t_count <= t_MAX:
-    roll, pitch, yaw, tilting_angle = read_gyroscope(t_count) # in deg
-    # tilting_angle = 0.5
-    ''' +ve tilting: more -ve joint2, -ve tilting: more +ve joint 2 '''
+    tilting_angle = read_gyroscope(t_count) # in deg
+    if tilting_angle == None:
+        tilting_angle = prev_tilting_angle
+        print(f'{t_count:.2f}s: Error! Gyroscope cannot be read! Current angle = {tilting_angle:.2f}deg')
 
-    if abs(tilting_angle) < 1: # 1deg
+    if abs(tilting_angle) < 1: # 1deg as empirical 
         new_joint2_angle = prev_desired_joint2_angle
     else:
         new_joint2_angle = prev_joint2_angle + tilting_angle
@@ -260,7 +263,7 @@ while t_count <= t_MAX:
     if within_limit != True:
         print(f'{t_count:.2f}s: Error! Desired Joint 2 is outside limits! Desired joint2 now: {desired_joint2_angle:.2f}')
 
-    desired_joint_position = np.array([0, desired_joint2_angle, 0, 155, 0]) *np.pi/180 - zero_pos_joint_offset
+    desired_joint_position = np.array([0, desired_joint2_angle, 0, 163, 0]) *np.pi/180 - zero_pos_joint_offset
     # desired_joint_position = np.array([0, -20, 0, 155, 0]) *np.pi/180 - zero_pos_joint_offset
     desired_motor_position = np.hstack((desired_joint_position[0], 
                                         computed_differential_position(desired_joint_position[1:])))
@@ -305,8 +308,13 @@ while t_count <= t_MAX:
     record.append(temp_record)
 
     prev_desired_joint2_angle = desired_joint2_angle
+    prev_tilting_angle = tilting_angle
+    if msvcrt.kbhit():                        # key waiting
+        if msvcrt.getch() == b'.':            # read one byte
+            print(f'\nt={t_count:.2f}s\t', "'.' pressed → exiting loop.")
+            break
 
-final_pos_on_table() # only apply when testing on table
+# final_pos_on_table() # only apply when testing on table
 
 stop_RSmotors()
 header = printcsv(filename, record)
