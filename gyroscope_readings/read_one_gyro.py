@@ -6,11 +6,11 @@ import numpy as np
 
 import os
 
-t_run = 60
-filename="TITA_standing single_gyro_angles.csv"
+t_run = 5
+filename="0712_2 before whole system single_gyro.csv"
 
 ser = serial.Serial(
-    port='COM12', 
+    port='COM17', 
     baudrate=9600,  
     timeout=1
 )
@@ -120,7 +120,7 @@ try:
     t_buffer = 1/100
     set_gyro_xy_zero()
     ser.reset_input_buffer()
-    time.sleep(3)
+    time.sleep(1)
     log_to_csv(t_run, t_buffer)
 finally:
     ser.close()

@@ -7,3 +7,5 @@ This repo is to model, construct and control the mechanical arm that serves as t
 2. For reading TITA real-time data, please refer to "TITA_readings".
 
 3. For CAN Bus communication, control of the mechanical arm and the communication between TITA and the arm, please refer to "Control".
+
+4. For gyroscope angle extraction, please refer to "gyroscope_readings".
