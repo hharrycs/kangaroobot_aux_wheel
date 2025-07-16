@@ -208,13 +208,13 @@ def printcsv(filename, results):
         writer.writerows(results)
     return header
 
-def plot_graphs(results, header):
+def plot_position_graphs(results, header):
     results = np.asarray(results)
     time = results[:, 0]
 
     # Index mapping: update if your header changes!
     col_map = {
-        "gyro": header.index("Resultant gyro tilting angle on TITA (°)"),
+        "gyro": header.index("Resultant gyro tilting angle on TITA (?"),
         "motor1_desired": header.index("Desired motor 1 position (deg)"),
         "motor1_detected": header.index("Detected motor 1 position (deg)"),
         "motor2_desired": header.index("Desired motor 2 position (deg)"),
@@ -227,75 +227,52 @@ def plot_graphs(results, header):
         "motor5_detected": header.index("Detected motor 5 position (deg)"),
     }
 
-    fig = plt.figure(figsize=(18, 10))
+    fig = plt.figure(figsize=(14, 10))
     grid = gridspec.GridSpec(nrows=2, ncols=3, wspace=0.3, hspace=0.35)
 
     # Graph 1: Gyro tilting angle vs Time
     ax = fig.add_subplot(grid[0, 0])
-    ax.scatter(time, results[:, col_map["gyro"]], s=10, label="Data", alpha=0.7)
-    z = np.polyfit(time, results[:, col_map["gyro"]], 1)
-    p = np.poly1d(z)
-    ax.plot(time, p(time), "r--", label="Trendline")
+    ax.plot(time, results[:, col_map["gyro"]], label="Data", alpha=0.7)
     ax.set_title("Gyro Tilting Angle vs Time")
     ax.set_ylabel("Angle (°)")
     ax.legend(fontsize="small")
 
     # Graph 2: Motor 1 desired/detected position
     ax = fig.add_subplot(grid[0, 1])
-    ax.scatter(time, results[:, col_map["motor1_desired"]], s=10, label="Desired", alpha=0.7)
-    ax.scatter(time, results[:, col_map["motor1_detected"]], s=10, label="Detected", alpha=0.7)
-    for idx, color in zip(["motor1_desired", "motor1_detected"], ["b", "g"]):
-        z = np.polyfit(time, results[:, col_map[idx]], 1)
-        p = np.poly1d(z)
-        ax.plot(time, p(time), color+"--")
+    ax.plot(time, results[:, col_map["motor1_desired"]], label="Desired", alpha=0.7)
+    ax.plot(time, results[:, col_map["motor1_detected"]], label="Detected", alpha=0.7)
     ax.set_title("Desired/Detected Motor 1 Position (deg)")
     ax.set_ylabel("Position (°)")
     ax.legend(fontsize="small")
 
     # Graph 3: Motor 2 desired/detected position
     ax = fig.add_subplot(grid[0, 2])
-    ax.scatter(time, results[:, col_map["motor2_desired"]], s=10, label="Desired", alpha=0.7)
-    ax.scatter(time, results[:, col_map["motor2_detected"]], s=10, label="Detected", alpha=0.7)
-    for idx, color in zip(["motor2_desired", "motor2_detected"], ["b", "g"]):
-        z = np.polyfit(time, results[:, col_map[idx]], 1)
-        p = np.poly1d(z)
-        ax.plot(time, p(time), color+"--")
+    ax.plot(time, results[:, col_map["motor2_desired"]], label="Desired", alpha=0.7)
+    ax.plot(time, results[:, col_map["motor2_detected"]], label="Detected", alpha=0.7)
     ax.set_title("Desired/Detected Motor 2 Position (deg)")
     ax.set_ylabel("Position (°)")
     ax.legend(fontsize="small")
 
     # Graph 4: Motor 3 desired/detected position
     ax = fig.add_subplot(grid[1, 0])
-    ax.scatter(time, results[:, col_map["motor3_desired"]], s=10, label="Desired", alpha=0.7)
-    ax.scatter(time, results[:, col_map["motor3_detected"]], s=10, label="Detected", alpha=0.7)
-    for idx, color in zip(["motor3_desired", "motor3_detected"], ["b", "g"]):
-        z = np.polyfit(time, results[:, col_map[idx]], 1)
-        p = np.poly1d(z)
-        ax.plot(time, p(time), color+"--")
+    ax.plot(time, results[:, col_map["motor3_desired"]], label="Desired", alpha=0.7)
+    ax.plot(time, results[:, col_map["motor3_detected"]], label="Detected", alpha=0.7)
     ax.set_title("Desired/Detected Motor 3 Position (deg)")
     ax.set_ylabel("Position (°)")
     ax.legend(fontsize="small")
 
     # Graph 5: Motor 4 desired/detected position
     ax = fig.add_subplot(grid[1, 1])
-    ax.scatter(time, results[:, col_map["motor4_desired"]], s=10, label="Desired", alpha=0.7)
-    ax.scatter(time, results[:, col_map["motor4_detected"]], s=10, label="Detected", alpha=0.7)
-    for idx, color in zip(["motor4_desired", "motor4_detected"], ["b", "g"]):
-        z = np.polyfit(time, results[:, col_map[idx]], 1)
-        p = np.poly1d(z)
-        ax.plot(time, p(time), color+"--")
+    ax.plot(time, results[:, col_map["motor4_desired"]], label="Desired", alpha=0.7)
+    ax.plot(time, results[:, col_map["motor4_detected"]], label="Detected", alpha=0.7)
     ax.set_title("Desired/Detected Motor 4 Position (deg)")
     ax.set_ylabel("Position (°)")
     ax.legend(fontsize="small")
 
     # Graph 6: Motor 5 desired/detected position
     ax = fig.add_subplot(grid[1, 2])
-    ax.scatter(time, results[:, col_map["motor5_desired"]], s=10, label="Desired", alpha=0.7)
-    ax.scatter(time, results[:, col_map["motor5_detected"]], s=10, label="Detected", alpha=0.7)
-    for idx, color in zip(["motor5_desired", "motor5_detected"], ["b", "g"]):
-        z = np.polyfit(time, results[:, col_map[idx]], 1)
-        p = np.poly1d(z)
-        ax.plot(time, p(time), color+"--")
+    ax.plot(time, results[:, col_map["motor5_desired"]], label="Desired", alpha=0.7)
+    ax.plot(time, results[:, col_map["motor5_detected"]], label="Detected", alpha=0.7)
     ax.set_title("Desired/Detected Motor 5 Position (deg)")
     ax.set_ylabel("Position (°)")
     ax.legend(fontsize="small")
@@ -306,6 +283,66 @@ def plot_graphs(results, header):
         ax.grid(True)
 
     fig.suptitle("Gyroscope & Motor Position Data vs Time", fontsize=16, y=0.98)
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
+    plt.show()
+
+def plot_torque_graphs(results, header):
+    results = np.asarray(results)
+    time = results[:, 0]
+
+    # Index mapping: update if your header changes!
+    col_map = {
+        "motor1_torque": header.index("Detected motor 1 torque (Nm)"),
+        "motor2_torque": header.index("Detected motor 2 torque (Nm)"),
+        "motor3_torque": header.index("Detected motor 3 torque (Nm)"),
+        "motor4_torque": header.index("Detected motor 4 torque (Nm)"),
+        "motor5_torque": header.index("Detected motor 5 torque (Nm)"),
+    }
+
+    fig = plt.figure(figsize=(8, 16))
+    grid = gridspec.GridSpec(nrows=3, ncols=2, wspace=0.3, hspace=0.35)
+
+    # Graph 1: Motor 1 torque
+    ax = fig.add_subplot(grid[0, 0])
+    ax.plot(time, results[:, col_map["motor1_torque"]], label="Torque", alpha=0.7)
+    ax.set_title("Detected Motor 1 Torque (Nm))")
+    ax.set_ylabel("Torque (Nm)")
+    ax.legend(fontsize="small")
+
+    # Graph 2: Motor 2 torque
+    ax = fig.add_subplot(grid[1, 0])
+    ax.plot(time, results[:, col_map["motor2_torque"]], label="Torque", alpha=0.7)
+    ax.set_title("Detected Motor 2 Torque (Nm))")
+    ax.set_ylabel("Torque (Nm)")
+    ax.legend(fontsize="small")
+
+    # Graph 3: Motor 3 torque
+    ax = fig.add_subplot(grid[1, 1])
+    ax.plot(time, results[:, col_map["motor3_torque"]], label="Torque", alpha=0.7)
+    ax.set_title("Detected Motor 3 Torque (Nm))")
+    ax.set_ylabel("Torque (Nm)")
+    ax.legend(fontsize="small")
+
+    # Graph 4: Motor 4 torque
+    ax = fig.add_subplot(grid[2, 0])
+    ax.plot(time, results[:, col_map["motor4_torque"]], label="Torque", alpha=0.7)
+    ax.set_title("Detected Motor 4 Torque (Nm))")
+    ax.set_ylabel("Torque (Nm)")
+    ax.legend(fontsize="small")
+
+    # Graph 5: Motor 5 torque
+    ax = fig.add_subplot(grid[2, 1])
+    ax.plot(time, results[:, col_map["motor5_torque"]], label="Torque", alpha=0.7)
+    ax.set_title("Detected Motor 5 Torque (Nm))")
+    ax.set_ylabel("Torque (Nm)")
+    ax.legend(fontsize="small")
+
+    # X-axis label for all plots
+    for ax in fig.get_axes():
+        ax.set_xlabel("Time (s)")
+        ax.grid(True)
+
+    fig.suptitle("Motor Torque vs Time", fontsize=16, y=0.98)
     plt.tight_layout(rect=[0, 0, 1, 0.96])
     plt.show()
 
@@ -413,4 +450,5 @@ final_pos_on_table() # only apply when testing on table
 
 stop_RSmotors()
 header = printcsv(filename, record)
-plot_graphs(record, header)
+plot_position_graphs(record, header)
+plot_torque_graphs(record, header)
