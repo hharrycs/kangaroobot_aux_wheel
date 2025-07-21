@@ -7,8 +7,10 @@ import numpy as np
 import struct
 import csv
 import os
+import msvcrt
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+import matplotlib.ticker as ticker
 
 from motor_control_def import Controller
 from motor_process_responses import Responses
@@ -19,13 +21,13 @@ main_CAN = 253
 motor_CAN = [11, 41, 51, 31, 21] 
 angle_command1 = bytes([0x50, 0x03, 0x00, 0x3D, 0x00, 0x03, 0x99, 0x86]) # gyro angle reading command
 
-ser1 = serial.Serial('COM11', baudrate=921600, timeout=1)
-ser2 = serial.Serial('COM8', baudrate=921600, timeout=1)
-ser3 = serial.Serial(port='COM6', baudrate=9600, timeout=1)
+ser1 = serial.Serial('COM5', baudrate=921600, timeout=1)
+ser2 = serial.Serial('COM6', baudrate=921600, timeout=1)
+ser3 = serial.Serial(port='COM7', baudrate=9600, timeout=1)
 controller = Controller(ser1, ser2, None)
 processor = Responses(motor_CAN)
 
-t_MAX = 60
+t_MAX = 5
 t_delay = 1/1000 # between sending commands
 t_response = 1/200 # before reading responses
 record = []
@@ -34,6 +36,7 @@ record = []
 # tilting_limit = np.array([-10*np.pi/180, -(np.pi/2 - np.arccos(0.4925/0.5494))]) 
 tilting_limit = np.array([-10, -70]) # in degree
 lowest_limit, highest_limit = np.sort(tilting_limit)
+prev_tilting_angle = 0
 
 def calculate_crc(data):
     crc = 0xFFFF
@@ -65,7 +68,7 @@ def read_gyroscope(t_count):
         tilting_angle = np.degrees(np.arccos( np.cos(roll1/180*np.pi) * np.cos(pitch1/180*np.pi))) *sign # in deg
 
         # print(f'{t_count:.2f}s:\t{roll1:.2f}, {pitch1:.2f}, {yaw1:.2f} (deg)')
-        return roll1, pitch1, yaw1, tilting_angle
+        return tilting_angle
 
     except Exception as e:
         # any problem (timeout, CRC, struct error, etc.) ends up here
@@ -210,11 +213,11 @@ def printcsv(filename, results):
 
 def plot_position_graphs(results, header):
     results = np.asarray(results)
-    time = results[:, 0]
+    timestamp = results[:, 0].astype(float)
 
     # Index mapping: update if your header changes!
     col_map = {
-        "gyro": header.index("Resultant gyro tilting angle on TITA (?"),
+        "gyro": header.index("Resultant gyro tilting angle on TITA (°)"),
         "motor1_desired": header.index("Desired motor 1 position (deg)"),
         "motor1_detected": header.index("Detected motor 1 position (deg)"),
         "motor2_desired": header.index("Desired motor 2 position (deg)"),
@@ -227,52 +230,53 @@ def plot_position_graphs(results, header):
         "motor5_detected": header.index("Detected motor 5 position (deg)"),
     }
 
-    fig = plt.figure(figsize=(14, 10))
-    grid = gridspec.GridSpec(nrows=2, ncols=3, wspace=0.3, hspace=0.35)
+    fig = plt.figure(figsize=(12, 8), constrained_layout=True)
+    grid = gridspec.GridSpec(nrows=2, ncols=3)
 
     # Graph 1: Gyro tilting angle vs Time
     ax = fig.add_subplot(grid[0, 0])
-    ax.plot(time, results[:, col_map["gyro"]], label="Data", alpha=0.7)
+    ax.plot(timestamp, results[:, col_map["gyro"]].astype(float), label="Data", alpha=0.7)
+    print(col_map["gyro"])
     ax.set_title("Gyro Tilting Angle vs Time")
     ax.set_ylabel("Angle (°)")
     ax.legend(fontsize="small")
 
     # Graph 2: Motor 1 desired/detected position
     ax = fig.add_subplot(grid[0, 1])
-    ax.plot(time, results[:, col_map["motor1_desired"]], label="Desired", alpha=0.7)
-    ax.plot(time, results[:, col_map["motor1_detected"]], label="Detected", alpha=0.7)
+    ax.plot(timestamp, results[:, col_map["motor1_desired"]].astype(float), label="Desired", alpha=0.7)
+    ax.plot(timestamp, results[:, col_map["motor1_detected"]].astype(float), label="Detected", alpha=0.7)
     ax.set_title("Desired/Detected Motor 1 Position (deg)")
     ax.set_ylabel("Position (°)")
     ax.legend(fontsize="small")
 
     # Graph 3: Motor 2 desired/detected position
     ax = fig.add_subplot(grid[0, 2])
-    ax.plot(time, results[:, col_map["motor2_desired"]], label="Desired", alpha=0.7)
-    ax.plot(time, results[:, col_map["motor2_detected"]], label="Detected", alpha=0.7)
+    ax.plot(timestamp, results[:, col_map["motor2_desired"]].astype(float), label="Desired", alpha=0.7)
+    ax.plot(timestamp, results[:, col_map["motor2_detected"]].astype(float), label="Detected", alpha=0.7)
     ax.set_title("Desired/Detected Motor 2 Position (deg)")
     ax.set_ylabel("Position (°)")
     ax.legend(fontsize="small")
 
     # Graph 4: Motor 3 desired/detected position
     ax = fig.add_subplot(grid[1, 0])
-    ax.plot(time, results[:, col_map["motor3_desired"]], label="Desired", alpha=0.7)
-    ax.plot(time, results[:, col_map["motor3_detected"]], label="Detected", alpha=0.7)
+    ax.plot(timestamp, results[:, col_map["motor3_desired"]].astype(float), label="Desired", alpha=0.7)
+    ax.plot(timestamp, results[:, col_map["motor3_detected"]].astype(float), label="Detected", alpha=0.7)
     ax.set_title("Desired/Detected Motor 3 Position (deg)")
     ax.set_ylabel("Position (°)")
     ax.legend(fontsize="small")
 
     # Graph 5: Motor 4 desired/detected position
     ax = fig.add_subplot(grid[1, 1])
-    ax.plot(time, results[:, col_map["motor4_desired"]], label="Desired", alpha=0.7)
-    ax.plot(time, results[:, col_map["motor4_detected"]], label="Detected", alpha=0.7)
+    ax.plot(timestamp, results[:, col_map["motor4_desired"]].astype(float), label="Desired", alpha=0.7)
+    ax.plot(timestamp, results[:, col_map["motor4_detected"]].astype(float), label="Detected", alpha=0.7)
     ax.set_title("Desired/Detected Motor 4 Position (deg)")
     ax.set_ylabel("Position (°)")
     ax.legend(fontsize="small")
 
     # Graph 6: Motor 5 desired/detected position
     ax = fig.add_subplot(grid[1, 2])
-    ax.plot(time, results[:, col_map["motor5_desired"]], label="Desired", alpha=0.7)
-    ax.plot(time, results[:, col_map["motor5_detected"]], label="Detected", alpha=0.7)
+    ax.plot(timestamp, results[:, col_map["motor5_desired"]].astype(float), label="Desired", alpha=0.7)
+    ax.plot(timestamp, results[:, col_map["motor5_detected"]].astype(float), label="Detected", alpha=0.7)
     ax.set_title("Desired/Detected Motor 5 Position (deg)")
     ax.set_ylabel("Position (°)")
     ax.legend(fontsize="small")
@@ -280,7 +284,12 @@ def plot_position_graphs(results, header):
     # X-axis label for all plots
     for ax in fig.get_axes():
         ax.set_xlabel("Time (s)")
-        ax.grid(True)
+        ax.grid(True, linestyle=':', alpha=0.5)
+        plt.setp(ax.get_xticklabels(), rotation=0, ha='center')
+        plt.setp(ax.get_yticklabels(), rotation=0)
+        ax.xaxis.set_major_locator(ticker.MaxNLocator(nbins=6))
+        ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=6))
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{x:.2f}'))
 
     fig.suptitle("Gyroscope & Motor Position Data vs Time", fontsize=16, y=0.98)
     plt.tight_layout(rect=[0, 0, 1, 0.96])
@@ -288,7 +297,8 @@ def plot_position_graphs(results, header):
 
 def plot_torque_graphs(results, header):
     results = np.asarray(results)
-    time = results[:, 0]
+    timestamp = results[:, 0].astype(float)
+
 
     # Index mapping: update if your header changes!
     col_map = {
@@ -299,40 +309,40 @@ def plot_torque_graphs(results, header):
         "motor5_torque": header.index("Detected motor 5 torque (Nm)"),
     }
 
-    fig = plt.figure(figsize=(8, 16))
-    grid = gridspec.GridSpec(nrows=3, ncols=2, wspace=0.3, hspace=0.35)
+    fig = plt.figure(figsize=(8, 8), constrained_layout=True)
+    grid = gridspec.GridSpec(nrows=3, ncols=2)
 
     # Graph 1: Motor 1 torque
     ax = fig.add_subplot(grid[0, 0])
-    ax.plot(time, results[:, col_map["motor1_torque"]], label="Torque", alpha=0.7)
+    ax.plot(timestamp, results[:, col_map["motor1_torque"]].astype(float), label="Torque", alpha=0.7)
     ax.set_title("Detected Motor 1 Torque (Nm))")
     ax.set_ylabel("Torque (Nm)")
     ax.legend(fontsize="small")
 
     # Graph 2: Motor 2 torque
     ax = fig.add_subplot(grid[1, 0])
-    ax.plot(time, results[:, col_map["motor2_torque"]], label="Torque", alpha=0.7)
+    ax.plot(timestamp, results[:, col_map["motor2_torque"]].astype(float), label="Torque", alpha=0.7)
     ax.set_title("Detected Motor 2 Torque (Nm))")
     ax.set_ylabel("Torque (Nm)")
     ax.legend(fontsize="small")
 
     # Graph 3: Motor 3 torque
     ax = fig.add_subplot(grid[1, 1])
-    ax.plot(time, results[:, col_map["motor3_torque"]], label="Torque", alpha=0.7)
+    ax.plot(timestamp, results[:, col_map["motor3_torque"]].astype(float), label="Torque", alpha=0.7)
     ax.set_title("Detected Motor 3 Torque (Nm))")
     ax.set_ylabel("Torque (Nm)")
     ax.legend(fontsize="small")
 
     # Graph 4: Motor 4 torque
     ax = fig.add_subplot(grid[2, 0])
-    ax.plot(time, results[:, col_map["motor4_torque"]], label="Torque", alpha=0.7)
+    ax.plot(timestamp, results[:, col_map["motor4_torque"]].astype(float), label="Torque", alpha=0.7)
     ax.set_title("Detected Motor 4 Torque (Nm))")
     ax.set_ylabel("Torque (Nm)")
     ax.legend(fontsize="small")
 
     # Graph 5: Motor 5 torque
     ax = fig.add_subplot(grid[2, 1])
-    ax.plot(time, results[:, col_map["motor5_torque"]], label="Torque", alpha=0.7)
+    ax.plot(timestamp, results[:, col_map["motor5_torque"]].astype(float), label="Torque", alpha=0.7)
     ax.set_title("Detected Motor 5 Torque (Nm))")
     ax.set_ylabel("Torque (Nm)")
     ax.legend(fontsize="small")
@@ -340,7 +350,12 @@ def plot_torque_graphs(results, header):
     # X-axis label for all plots
     for ax in fig.get_axes():
         ax.set_xlabel("Time (s)")
-        ax.grid(True)
+        ax.grid(True, linestyle=':', alpha=0.5)
+        plt.setp(ax.get_xticklabels(), rotation=0, ha='center')
+        plt.setp(ax.get_yticklabels(), rotation=0)
+        ax.xaxis.set_major_locator(ticker.MaxNLocator(nbins=6))
+        ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=6))
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{x:.2f}'))
 
     fig.suptitle("Motor Torque vs Time", fontsize=16, y=0.98)
     plt.tight_layout(rect=[0, 0, 1, 0.96])
@@ -377,17 +392,18 @@ zero_pos_motor_offset = np.hstack((zero_pos_joint_offset[0], zero_pos_joint_offs
 
 
 prev_joint2_angle = initialise_RSmotors(zero_pos_motor_offset) # in deg
-prev_desired_joint2_angle = -65
+prev_desired_joint2_angle = -10.5
 set_gyro_xy_zero()
 time.sleep(5)
 
 t_start = time.perf_counter(); t_count = 0
 while t_count <= t_MAX:
-    roll, pitch, yaw, tilting_angle = read_gyroscope(t_count) # in deg
-    # tilting_angle = 0.5
-    ''' +ve tilting: more -ve joint2, -ve tilting: more +ve joint 2 '''
+    tilting_angle = read_gyroscope(t_count) # in deg
+    if tilting_angle == None:
+        tilting_angle = prev_tilting_angle
+        print(f'{t_count:.2f}s: Error! Gyroscope cannot be read! Current angle = {tilting_angle:.2f}deg')
 
-    if abs(tilting_angle) < 1: # 1deg
+    if abs(tilting_angle) < 1: # 1deg as empirical 
         new_joint2_angle = prev_desired_joint2_angle
     else:
         new_joint2_angle = prev_joint2_angle + tilting_angle
@@ -400,7 +416,7 @@ while t_count <= t_MAX:
     if within_limit != True:
         print(f'{t_count:.2f}s: Error! Desired Joint 2 is outside limits! Desired joint2 now: {desired_joint2_angle:.2f}')
 
-    desired_joint_position = np.array([0, desired_joint2_angle, 0, 155, 0]) *np.pi/180 - zero_pos_joint_offset
+    desired_joint_position = np.array([0, desired_joint2_angle, 0, 163, 0]) *np.pi/180 - zero_pos_joint_offset
     # desired_joint_position = np.array([0, -20, 0, 155, 0]) *np.pi/180 - zero_pos_joint_offset
     desired_motor_position = np.hstack((desired_joint_position[0], 
                                         computed_differential_position(desired_joint_position[1:])))
@@ -445,8 +461,13 @@ while t_count <= t_MAX:
     record.append(temp_record)
 
     prev_desired_joint2_angle = desired_joint2_angle
+    prev_tilting_angle = tilting_angle
+    if msvcrt.kbhit():                        # key waiting
+        if msvcrt.getch() == b'.':            # read one byte
+            print(f'\nt={t_count:.2f}s\t', "'.' pressed → exiting loop.")
+            break
 
-final_pos_on_table() # only apply when testing on table
+#final_pos_on_table() # only apply when testing on table
 
 stop_RSmotors()
 header = printcsv(filename, record)
